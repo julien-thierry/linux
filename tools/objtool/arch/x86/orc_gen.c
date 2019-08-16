@@ -6,11 +6,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "orc.h"
-#include "check.h"
-#include "warn.h"
+#include "../../orc.h"
+#include "../../check.h"
+#include "../../warn.h"
 
-int orc_init(struct objtool_file *file)
+int arch_orc_init(struct objtool_file *file)
 {
 	struct instruction *insn;
 
@@ -117,7 +117,7 @@ static int orc_create_entry(struct elf *elf, struct section *u_sec, struct secti
 	return 0;
 }
 
-int orc_create_sections(struct objtool_file *file)
+int arch_orc_create_sections(struct objtool_file *file)
 {
 	struct instruction *insn, *prev_insn;
 	struct section *sec, *u_sec, *ip_relasec;

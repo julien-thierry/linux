@@ -2459,11 +2459,11 @@ int check(const char *_objname, bool orc)
 	}
 
 	if (orc) {
-		ret = orc_init(&file);
+		ret = arch_orc_init(&file);
 		if (ret < 0)
 			goto out;
 
-		ret = orc_create_sections(&file);
+		ret = arch_orc_create_sections(&file);
 		if (ret < 0)
 			goto out;
 
