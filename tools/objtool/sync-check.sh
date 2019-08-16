@@ -15,6 +15,11 @@ arch/x86/include/asm/insn.h     -I '^#include [\"<]\(asm/\)*inat.h[\">]'
 arch/x86/lib/inat.c             -I '^#include [\"<]\(../include/\)*asm/insn.h[\">]'
 arch/x86/lib/insn.c             -I '^#include [\"<]\(../include/\)*asm/in\(at\|sn\).h[\">]' -I '^#include [\"<]\(../include/\)*asm/emulate_prefix.h[\">]'
 "
+elif [ $TARGET_ARCH == "arm64" ]; then
+FILES="
+arch/arm64/include/asm/aarch64-insn.h -I '^#include [\"<]\(asm/\)*brk-imm.h[\">]'
+arch/arm64/lib/aarch64-insn.c         -I '^#include [\"<]\(asm/\)*kprobes.h[\">]'
+"
 fi
 
 check_2 () {

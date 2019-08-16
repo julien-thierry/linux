@@ -36,6 +36,7 @@ struct instruction {
 	unsigned long immediate;
 	bool alt_group, dead_end, ignore, hint, save, restore, ignore_alts;
 	bool retpoline_safe;
+	bool data;
 	u8 visited;
 	struct symbol *call_dest;
 	struct instruction *jump_dest;
@@ -66,6 +67,7 @@ int check(const char *objname, bool orc);
 
 struct instruction *find_insn(struct objtool_file *file,
 			      struct section *sec, unsigned long offset);
+void mark_data(struct instruction *insn);
 
 #define for_each_insn(file, insn)					\
 	list_for_each_entry(insn, &file->insn_list, list)

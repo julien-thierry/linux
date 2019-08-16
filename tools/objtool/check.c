@@ -33,6 +33,13 @@ struct instruction *find_insn(struct objtool_file *file,
 	return NULL;
 }
 
+void mark_data(struct instruction *insn)
+{
+	insn->data = true;
+	/* Remove any semantic associated with insn */
+	insn->type = INSN_OTHER;
+}
+
 static struct instruction *next_insn_same_sec(struct objtool_file *file,
 					      struct instruction *insn)
 {
@@ -272,8 +279,12 @@ static int decode_instructions(struct objtool_file *file)
 		}
 
 		list_for_each_entry(sym, &sec->symbol_list, list) {
-			if ((sym->type != STT_FUNC && sym->type != STT_NOTYPE) ||
-			     sym->alias != sym)
+			if (sym->len <= 0 || sym->alias != sym)
+				continue;
+
+			if (sym->type != STT_FUNC &&
+			    sym->type != STT_NOTYPE &&
+			    sym->type != STT_OBJECT)
 				continue;
 
 			if (!find_insn(file, sec, sym->offset)) {
@@ -283,7 +294,11 @@ static int decode_instructions(struct objtool_file *file)
 			}
 
 			sym_for_each_insn(file, sym, insn) {
-				insn->code_sym = sym;
+				if (sym->type == STT_OBJECT)
+					mark_data(insn);
+				else
+					insn->code_sym = sym;
+
 				if (sym->type == STT_FUNC)
 					insn->func = sym;
 			}
@@ -292,6 +307,9 @@ static int decode_instructions(struct objtool_file *file)
 
 	if (stats)
 		printf("nr_insns: %lu\n", nr_insns);
+
+	if (arch_post_process_file(file))
+		return -1;
 
 	return 0;
 
@@ -2002,6 +2020,13 @@ static int validate_branch(struct objtool_file *file, struct symbol *func,
 	while (1) {
 		next_insn = next_insn_same_sec(file, insn);
 
+		if (insn->data) {
+			WARN("%s+0x%lx non-executable instruction, should never be reached",
+			     insn->sec->name,
+			     insn->offset);
+			return 1;
+		}
+
 		if (file->c_file && func && insn->func && func != insn->func->pfunc) {
 			WARN("%s() falls through to next function %s()",
 			     func->name, insn->func->name);
@@ -2293,7 +2318,7 @@ static bool ignore_unreachable_insn(struct instruction *insn)
 {
 	int i;
 
-	if (insn->ignore || insn->type == INSN_NOP)
+	if (insn->ignore || insn->type == INSN_NOP || insn->data)
 		return true;
 
 	/*
