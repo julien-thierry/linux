@@ -49,6 +49,12 @@ struct instruction {
 	struct orc_entry orc;
 };
 
+struct alternative {
+	struct list_head list;
+	struct instruction *insn;
+	bool skip_orig;
+};
+
 struct objtool_file {
 	struct elf *elf;
 	struct list_head insn_list;
@@ -70,5 +76,6 @@ struct instruction *find_insn(struct objtool_file *file,
 			insn->sec == sec;				\
 	     insn = list_next_entry(insn, list))
 
+#define C_JUMP_TABLE_SECTION ".rodata..c_jump_table"
 
 #endif /* _CHECK_H */
