@@ -10,8 +10,8 @@
 
 struct objtool_file;
 
-int create_orc(struct objtool_file *file);
-int create_orc_sections(struct objtool_file *file);
+int orc_init(struct objtool_file *file);
+int orc_create_sections(struct objtool_file *file);
 
 int orc_dump(const char *objname);
 
