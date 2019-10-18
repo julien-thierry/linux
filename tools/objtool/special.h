@@ -8,6 +8,7 @@
 
 #include <stdbool.h>
 #include "elf.h"
+#include "arch_special.h"
 
 struct special_alt {
 	struct list_head list;
@@ -27,5 +28,12 @@ struct special_alt {
 };
 
 int special_get_alts(struct elf *elf, struct list_head *alts);
+
+#ifndef arch_handle_alternative
+static inline void arch_handle_alternative(unsigned short feature,
+					   struct special_alt *alt)
+{
+}
+#endif
 
 #endif /* _SPECIAL_H */

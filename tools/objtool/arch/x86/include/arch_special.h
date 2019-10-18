@@ -20,4 +20,9 @@
 #define X86_FEATURE_POPCNT (4 * 32 + 23)
 #define X86_FEATURE_SMAP   (9 * 32 + 20)
 
+struct special_alt;
+
+#define arch_handle_alternative arch_handle_alternative
+void arch_handle_alternative(unsigned short feature, struct special_alt *alt);
+
 #endif /* _X86_ARCH_SPECIAL_H */
