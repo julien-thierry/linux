@@ -43,7 +43,7 @@ struct instruction {
 	struct list_head alts;
 	struct symbol *func;
 	struct symbol *code_sym;
-	struct stack_op stack_op;
+	struct list_head stack_ops;
 	struct insn_state state;
 	struct orc_entry orc;
 };
