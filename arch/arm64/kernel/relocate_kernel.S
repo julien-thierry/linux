@@ -116,6 +116,8 @@ ENDPROC(arm64_relocate_new_kernel)
 .align 3	/* To keep the 64-bit values below naturally aligned. */
 
 .Lcopy_end:
+.balign	KEXEC_CONTROL_PAGE_SIZE
+/* Ensure we didn't go past the limit */
 .org	KEXEC_CONTROL_PAGE_SIZE
 
 /*
