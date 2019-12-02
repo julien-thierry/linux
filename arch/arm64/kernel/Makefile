@@ -31,6 +31,7 @@ obj-$(CONFIG_COMPAT)			+= sys32.o signal32.o			\
 					   sys_compat.o
 ifneq ($(CONFIG_COMPAT_VDSO), y)
 obj-$(CONFIG_COMPAT)			+= sigreturn32.o
+OBJECT_FILES_NON_STANDARD_sigreturn32.o := y
 endif
 obj-$(CONFIG_KUSER_HELPERS)		+= kuser32.o
 
