@@ -120,10 +120,13 @@ ENDPROC(arm64_relocate_new_kernel)
 /* Ensure we didn't go past the limit */
 .org	KEXEC_CONTROL_PAGE_SIZE
 
+.pushsection ".rodata", "a"
 /*
  * arm64_relocate_new_kernel_size - Number of bytes to copy to the
  * control_code_page.
  */
 .globl arm64_relocate_new_kernel_size
+.align 8
 arm64_relocate_new_kernel_size:
 	.quad	.Lcopy_end - arm64_relocate_new_kernel
+.popsection
