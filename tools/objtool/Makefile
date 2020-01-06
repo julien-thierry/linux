@@ -2,6 +2,10 @@
 include ../scripts/Makefile.include
 include ../scripts/Makefile.arch
 
+ifeq ($(SRCARCH),x86)
+OBJTOOL_ORC := y
+endif
+
 # always use the host compiler
 HOSTAR	?= ar
 HOSTCC	?= gcc
@@ -39,8 +43,12 @@ LDFLAGS  += $(LIBELF_LIBS) $(LIBSUBCMD) $(KBUILD_HOSTLDFLAGS)
 elfshdr := $(shell echo '$(pound)include <libelf.h>' | $(CC) $(CFLAGS) -x c -E - | grep elf_getshdr)
 CFLAGS += $(if $(elfshdr),,-DLIBELF_USE_DEPRECATED)
 
+ifeq ($(OBJTOOL_ORC),y)
+CFLAGS	+= -DOBJTOOL_ORC
+endif
+
 AWK = awk
-export srctree OUTPUT CFLAGS SRCARCH AWK
+export srctree OUTPUT CFLAGS SRCARCH AWK OBJTOOL_ORC
 include $(srctree)/tools/build/Makefile.include
 
 $(OBJTOOL_IN): fixdep FORCE
