@@ -132,8 +132,7 @@ CPU_LE(	rev32		v11.16b, v11.16b	)
 	st1		{dgav.4s}, [x19]
 	str		dgb, [x19, #16]
 	do_cond_yield_neon
-	b		0b
-	endif_yield_neon
+	endif_yield_neon 0b
 
 	b		1b
 

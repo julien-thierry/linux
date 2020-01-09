@@ -139,8 +139,7 @@ CPU_LE(	rev32		v19.16b, v19.16b	)
 	if_will_cond_yield_neon
 	st1		{dgav.4s, dgbv.4s}, [x19]
 	do_cond_yield_neon
-	b		0b
-	endif_yield_neon
+	endif_yield_neon 0b
 
 	b		1b
 

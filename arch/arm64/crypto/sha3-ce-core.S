@@ -203,8 +203,7 @@ SYM_FUNC_START(sha3_ce_transform)
 	st1	{v20.1d-v23.1d}, [x8], #32
 	st1	{v24.1d}, [x8]
 	do_cond_yield_neon
-	b		0b
-	endif_yield_neon
+	endif_yield_neon 0b
 
 	b	1b
 
