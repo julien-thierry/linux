@@ -7,7 +7,7 @@
 #define _ASM_UPROBES_H
 
 #include <asm/debug-monitors.h>
-#include <asm/insn.h>
+#include <asm/aarch64-insn.h>
 #include <asm/probes.h>
 
 #define MAX_UINSN_BYTES		AARCH64_INSN_SIZE

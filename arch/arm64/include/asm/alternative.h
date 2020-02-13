@@ -3,7 +3,7 @@
 #define __ASM_ALTERNATIVE_H
 
 #include <asm/cpucaps.h>
-#include <asm/insn.h>
+#include <asm/aarch64-insn.h>
 
 #define ARM64_CB_PATCH ARM64_NCAPS
 

@@ -8,7 +8,7 @@
 #ifndef __ASM_FTRACE_H
 #define __ASM_FTRACE_H
 
-#include <asm/insn.h>
+#include <asm/aarch64-insn.h>
 
 #define HAVE_FUNCTION_GRAPH_FP_TEST
 
