@@ -52,7 +52,7 @@ export srctree OUTPUT CFLAGS SRCARCH AWK OBJTOOL_ORC
 include $(srctree)/tools/build/Makefile.include
 
 $(OBJTOOL_IN): fixdep FORCE
-	@$(CONFIG_SHELL) ./sync-check.sh
+	@$(CONFIG_SHELL) ./sync-check.sh $(SRCARCH)
 	@$(MAKE) $(build)=objtool
 
 $(OBJTOOL): $(LIBSUBCMD) $(OBJTOOL_IN)
