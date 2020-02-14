@@ -384,6 +384,34 @@ static inline bool aarch64_insn_is_barrier(u32 insn)
 	       aarch64_insn_is_isb(insn);
 }
 
+static inline bool aarch64_insn_is_store_single(u32 insn)
+{
+	return aarch64_insn_is_store_imm(insn) ||
+	       aarch64_insn_is_store_pre(insn) ||
+	       aarch64_insn_is_store_post(insn);
+}
+
+static inline bool aarch64_insn_is_store_pair(u32 insn)
+{
+	return aarch64_insn_is_stp(insn) ||
+	       aarch64_insn_is_stp_pre(insn) ||
+	       aarch64_insn_is_stp_post(insn);
+}
+
+static inline bool aarch64_insn_is_load_single(u32 insn)
+{
+	return aarch64_insn_is_load_imm(insn) ||
+	       aarch64_insn_is_load_pre(insn) ||
+	       aarch64_insn_is_load_post(insn);
+}
+
+static inline bool aarch64_insn_is_load_pair(u32 insn)
+{
+	return aarch64_insn_is_ldp(insn) ||
+	       aarch64_insn_is_ldp_pre(insn) ||
+	       aarch64_insn_is_ldp_post(insn);
+}
+
 u64 aarch64_insn_decode_immediate(enum aarch64_insn_imm_type type, u32 insn);
 u32 aarch64_insn_encode_immediate(enum aarch64_insn_imm_type type,
 				  u32 insn, u64 imm);
