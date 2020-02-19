@@ -351,6 +351,9 @@ __AARCH64_INSN_FUNCS(eret,	0xFFFFFFFF, 0xD69F03E0)
 __AARCH64_INSN_FUNCS(mrs,	0xFFF00000, 0xD5300000)
 __AARCH64_INSN_FUNCS(msr_imm,	0xFFF8F01F, 0xD500401F)
 __AARCH64_INSN_FUNCS(msr_reg,	0xFFF00000, 0xD5100000)
+__AARCH64_INSN_FUNCS(dmb,	0xFFFFF0FF, 0xD50330BF)
+__AARCH64_INSN_FUNCS(dsb,	0xFFFFF0FF, 0xD503309F)
+__AARCH64_INSN_FUNCS(isb,	0xFFFFF0FF, 0xD50330DF)
 
 #undef	__AARCH64_INSN_FUNCS
 
@@ -364,6 +367,12 @@ bool aarch64_insn_is_branch_imm(u32 insn);
 static inline bool aarch64_insn_is_adr_adrp(u32 insn)
 {
 	return aarch64_insn_is_adr(insn) || aarch64_insn_is_adrp(insn);
+}
+
+static inline bool aarch64_insn_is_barrier(u32 insn)
+{
+	return aarch64_insn_is_dmb(insn) || aarch64_insn_is_dsb(insn) ||
+	       aarch64_insn_is_isb(insn);
 }
 
 u64 aarch64_insn_decode_immediate(enum aarch64_insn_imm_type type, u32 insn);
