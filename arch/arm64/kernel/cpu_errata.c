@@ -6,6 +6,7 @@
  */
 
 #include <linux/arm-smccc.h>
+#include <linux/frame.h>
 #include <linux/types.h>
 #include <linux/cpu.h>
 #include <asm/cpu.h>
@@ -192,6 +193,7 @@ static void qcom_link_stack_sanitization(void)
 		     "mov	x30, %0		\n"
 		     : "=&r" (tmp));
 }
+STACK_FRAME_NON_STANDARD(qcom_link_stack_sanitization);
 
 static bool __nospectre_v2;
 static int __init parse_nospectre_v2(char *str)
