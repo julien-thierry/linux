@@ -75,7 +75,7 @@ int arch_orc_init(struct objtool_file *file)
 
 		orc->sp_offset = cfa->offset;
 		orc->bp_offset = bp->offset;
-		orc->type = insn->state.type;
+		orc->type = insn->state.hint_type;
 	}
 
 	return 0;

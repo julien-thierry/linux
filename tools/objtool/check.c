@@ -13,6 +13,7 @@
 #include "arch.h"
 #include "warn.h"
 
+#include <linux/frame.h>
 #include <linux/hashtable.h>
 #include <linux/kernel.h>
 
@@ -1154,7 +1155,6 @@ static int read_unwind_hints(struct objtool_file *file)
 	struct rela *rela;
 	struct unwind_hint *hint;
 	struct instruction *insn;
-	struct cfi_reg *cfa;
 	int i;
 
 	sec = find_section_by_name(file->elf, ".discard.unwind_hints");
@@ -1189,54 +1189,10 @@ static int read_unwind_hints(struct objtool_file *file)
 			return -1;
 		}
 
-		cfa = &insn->state.cfa;
-
-		if (hint->type == UNWIND_HINT_TYPE_SAVE) {
-			insn->save = true;
-			continue;
-
-		} else if (hint->type == UNWIND_HINT_TYPE_RESTORE) {
-			insn->restore = true;
-			insn->hint = true;
-			continue;
-		}
-
-		insn->hint = true;
-
-		switch (hint->sp_reg) {
-		case ORC_REG_UNDEFINED:
-			cfa->base = CFI_UNDEFINED;
-			break;
-		case ORC_REG_SP:
-			cfa->base = CFI_SP;
-			break;
-		case ORC_REG_BP:
-			cfa->base = CFI_BP;
-			break;
-		case ORC_REG_SP_INDIRECT:
-			cfa->base = CFI_SP_INDIRECT;
-			break;
-		case ORC_REG_R10:
-			cfa->base = CFI_R10;
-			break;
-		case ORC_REG_R13:
-			cfa->base = CFI_R13;
-			break;
-		case ORC_REG_DI:
-			cfa->base = CFI_DI;
-			break;
-		case ORC_REG_DX:
-			cfa->base = CFI_DX;
-			break;
-		default:
-			WARN_FUNC("unsupported unwind_hint sp base reg %d",
-				  insn->sec, insn->offset, hint->sp_reg);
+		if (arch_decode_insn_hint(insn, hint)) {
+			WARN_FUNC("Bad unwind hint", insn->sec, insn->offset);
 			return -1;
 		}
-
-		cfa->offset = hint->sp_offset;
-		insn->state.type = hint->type;
-		insn->state.end = hint->end;
 	}
 
 	return 0;
@@ -1391,7 +1347,6 @@ static bool has_valid_stack_frame(struct insn_state *state)
 	return false;
 }
 
-#ifdef OBJTOOL_ORC
 static int update_insn_state_regs(struct instruction *insn,
 				  struct insn_state *state,
 				  struct stack_op *op)
@@ -1416,7 +1371,6 @@ static int update_insn_state_regs(struct instruction *insn,
 
 	return 0;
 }
-#endif
 
 static void save_reg(struct insn_state *state, unsigned char reg, int base,
 		     int offset)
@@ -1502,10 +1456,8 @@ static int update_insn_state(struct instruction *insn, struct insn_state *state,
 		return 0;
 	}
 
-#ifdef OBJTOOL_ORC
-	if (state->type == ORC_TYPE_REGS || state->type == ORC_TYPE_REGS_IRET)
+	if (state->pre_populated_stack)
 		return update_insn_state_regs(insn, state, op);
-#endif
 
 	switch (op->dest.type) {
 
@@ -1902,9 +1854,9 @@ static bool insn_state_match(struct instruction *insn, struct insn_state *state)
 			break;
 		}
 
-	} else if (state1->type != state2->type) {
+	} else if (state1->hint_type != state2->hint_type) {
 		WARN_FUNC("stack state mismatch: type1=%d type2=%d",
-			  insn->sec, insn->offset, state1->type, state2->type);
+			  insn->sec, insn->offset, state1->hint_type, state2->hint_type);
 
 	} else if (state1->drap != state2->drap ||
 		 (state1->drap && state1->drap_reg != state2->drap_reg) ||

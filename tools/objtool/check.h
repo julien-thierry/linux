@@ -18,7 +18,8 @@ struct insn_state {
 	struct cfi_reg cfa;
 	struct cfi_reg regs[CFI_NUM_REGS];
 	int stack_size;
-	unsigned char type;
+	char hint_type;
+	bool pre_populated_stack;
 	bool bp_scratch;
 	bool drap, end, uaccess, df;
 	unsigned int uaccess_stack;

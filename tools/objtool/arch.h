@@ -7,6 +7,7 @@
 #define _ARCH_H
 
 #include <stdbool.h>
+#include <linux/frame.h>
 #include <linux/list.h>
 #include "elf.h"
 #include "cfi.h"
@@ -85,5 +86,7 @@ bool arch_callee_saved_reg(unsigned char reg);
 unsigned long arch_jump_destination(struct instruction *insn);
 
 unsigned long arch_dest_rela_offset(int addend);
+
+int arch_decode_insn_hint(struct instruction *insn, struct unwind_hint *hint);
 
 #endif /* _ARCH_H */
