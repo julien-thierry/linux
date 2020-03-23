@@ -150,6 +150,3 @@ ENTRY(_cpu_resume)
 	mov	x0, #0
 	ret
 ENDPROC(_cpu_resume)
-
-	asm_stack_frame_non_standard cpu_resume
-	asm_stack_frame_non_standard _cpu_resume
