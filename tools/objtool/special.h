@@ -40,8 +40,6 @@ static inline void arch_handle_alternative(unsigned short feature,
 bool arch_support_alt_relocation(struct special_alt *special_alt,
 				 struct instruction *insn,
 				 struct rela *rela);
-int arch_add_jump_table_dests(struct objtool_file *file,
-			      struct instruction *insn);
 struct rela *arch_find_switch_table(struct objtool_file *file,
 				    struct instruction *insn);
 #endif /* _SPECIAL_H */

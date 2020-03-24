@@ -49,63 +49,6 @@ bool arch_support_alt_relocation(struct special_alt *special_alt,
 	       (insn->type == INSN_CALL || is_static_jump(insn));
 }
 
-int arch_add_jump_table_dests(struct objtool_file *file,
-			      struct instruction *insn)
-{
-	struct rela *table = insn->jump_table;
-	struct rela *rela = table;
-	struct instruction *dest_insn;
-	struct alternative *alt;
-	struct symbol *pfunc = insn->func->pfunc;
-	unsigned int prev_offset = 0;
-
-	/*
-	 * Each @rela is a switch table relocation which points to the target
-	 * instruction.
-	 */
-	list_for_each_entry_from(rela, &table->sec->rela_list, list) {
-
-		/* Check for the end of the table: */
-		if (rela != table && rela->jump_table_start)
-			break;
-
-		/* Make sure the table entries are consecutive: */
-		if (prev_offset && rela->offset != prev_offset + 8)
-			break;
-
-		/* Detect function pointers from contiguous objects: */
-		if (rela->sym->sec == pfunc->sec &&
-		    rela->addend == pfunc->offset)
-			break;
-
-		dest_insn = find_insn(file, rela->sym->sec, rela->addend);
-		if (!dest_insn)
-			break;
-
-		/* Make sure the destination is in the same function: */
-		if (!dest_insn->func || dest_insn->func->pfunc != pfunc)
-			break;
-
-		alt = malloc(sizeof(*alt));
-		if (!alt) {
-			WARN("malloc failed");
-			return -1;
-		}
-
-		alt->insn = dest_insn;
-		list_add_tail(&alt->list, &insn->alts);
-		prev_offset = rela->offset;
-	}
-
-	if (!prev_offset) {
-		WARN_FUNC("can't find switch jump table",
-			  insn->sec, insn->offset);
-		return -1;
-	}
-
-	return 0;
-}
-
 /*
  * There are 3 basic jump table patterns:
  *
@@ -185,17 +128,16 @@ struct rela *arch_find_switch_table(struct objtool_file *file,
 	 * instruction.
 	 */
 	rodata_rela = find_rela_by_dest(file->elf, table_sec, table_offset);
-	if (rodata_rela) {
-		/*
-		 * Use of RIP-relative switch jumps is quite rare, and
-		 * indicates a rare GCC quirk/bug which can leave dead
-		 * code behind.
-		 */
-		if (text_rela->type == R_X86_64_PC32)
-			file->ignore_unreachables = true;
+	if (!rodata_rela)
+		return NULL;
 
-		return rodata_rela;
-	}
+	/*
+	 * Use of RIP-relative switch jumps is quite rare, and
+	 * indicates a rare GCC quirk/bug which can leave dead
+	 * code behind.
+	 */
+	if (text_rela->type == R_X86_64_PC32)
+		file->ignore_unreachables = true;
 
-	return NULL;
+	return rodata_rela;
 }
