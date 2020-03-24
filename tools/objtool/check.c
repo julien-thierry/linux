@@ -236,7 +236,7 @@ static void clear_insn_state(struct insn_state *state)
 static int decode_instructions(struct objtool_file *file)
 {
 	struct section *sec;
-	struct symbol *func;
+	struct symbol *sym;
 	unsigned long offset;
 	struct instruction *insn;
 	unsigned long nr_insns = 0;
@@ -278,18 +278,22 @@ static int decode_instructions(struct objtool_file *file)
 			nr_insns++;
 		}
 
-		list_for_each_entry(func, &sec->symbol_list, list) {
-			if (func->type != STT_FUNC || func->alias != func)
+		list_for_each_entry(sym, &sec->symbol_list, list) {
+			if ((sym->type != STT_FUNC && sym->type != STT_NOTYPE) ||
+			     sym->alias != sym)
 				continue;
 
-			if (!find_insn(file, sec, func->offset)) {
+			if (!find_insn(file, sec, sym->offset)) {
 				WARN("%s(): can't find starting instruction",
-				     func->name);
+				     sym->name);
 				return -1;
 			}
 
-			sym_for_each_insn(file, func, insn)
-				insn->func = func;
+			sym_for_each_insn(file, sym, insn) {
+				insn->code_sym = sym;
+				if (sym->type == STT_FUNC)
+					insn->func = sym;
+			}
 		}
 	}
 
@@ -758,6 +762,7 @@ static int handle_group_alt(struct objtool_file *file,
 		fake_jump->type = INSN_JUMP_UNCONDITIONAL;
 		fake_jump->jump_dest = list_next_entry(last_orig_insn, list);
 		fake_jump->func = orig_insn->func;
+		fake_jump->code_sym = orig_insn->code_sym;
 	}
 
 	if (!special_alt->new_len) {
@@ -2065,9 +2070,15 @@ static int validate_branch(struct objtool_file *file, struct symbol *func,
 			if (insn->restore) {
 				struct instruction *save_insn, *i;
 
+				if (!insn->code_sym) {
+					WARN_FUNC("restore instruction doesn't belong to any symbol",
+						  insn->sec, insn->offset);
+					return 1;
+				}
+
 				i = insn;
 				save_insn = NULL;
-				sym_for_each_insn_continue_reverse(file, func, i) {
+				sym_for_each_insn_continue_reverse(file, insn->code_sym, i) {
 					if (i->save) {
 						save_insn = i;
 						break;

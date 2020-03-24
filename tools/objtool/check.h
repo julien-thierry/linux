@@ -42,6 +42,7 @@ struct instruction {
 	struct rela *jump_table;
 	struct list_head alts;
 	struct symbol *func;
+	struct symbol *code_sym;
 	struct stack_op stack_op;
 	struct insn_state state;
 	struct orc_entry orc;
