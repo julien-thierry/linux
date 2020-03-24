@@ -2539,7 +2539,7 @@ out:
 		 *  some way, or objtool itself is broken.  Fail the kernel
 		 *  build.
 		 */
-		return ret;
+		return 0;
 	}
 
 	return 0;
