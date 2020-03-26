@@ -47,6 +47,10 @@ ifeq ($(OBJTOOL_ORC),y)
 CFLAGS	+= -DOBJTOOL_ORC
 endif
 
+ifeq ($(SRCARCH), arm64)
+CFLAGS	+= -DARM64_EXPERIMENTAL
+endif
+
 AWK = awk
 export srctree OUTPUT CFLAGS SRCARCH AWK OBJTOOL_ORC
 include $(srctree)/tools/build/Makefile.include
