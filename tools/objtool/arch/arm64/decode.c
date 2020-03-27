@@ -137,6 +137,9 @@ unsigned long arch_jump_destination(struct instruction *insn)
 
 int arch_decode_insn_hint(struct instruction *insn, struct unwind_hint *hint)
 {
+	struct insn_state *state = &insn->state;
+	int i = 0;
+
 	if (hint->type == UNWIND_HINT_TYPE_SAVE) {
 		insn->save = true;
 		return 0;
@@ -147,17 +150,29 @@ int arch_decode_insn_hint(struct instruction *insn, struct unwind_hint *hint)
 		return 0;
 	}
 
-	if (hint->sp_reg == UNWIND_HINT_REG_UNDEFINED)
-		insn->state.cfa.base = CFI_UNDEFINED;
-	else
-		insn->state.cfa.base = hint->sp_reg;
-
-	insn->state.cfa.offset = hint->sp_offset;
-	insn->state.pre_populated_stack = hint->type == UNWIND_HINT_TYPE_PT_REGS;
-	insn->state.hint_type = hint->type;
-	insn->state.end = hint->end;
-
 	insn->hint = true;
+
+	if (hint->sp_reg == UNWIND_HINT_REG_UNDEFINED)
+		state->cfa.base = CFI_UNDEFINED;
+	else
+		state->cfa.base = hint->sp_reg;
+
+	state->cfa.offset = hint->sp_offset;
+
+	state->hint_type = hint->type;
+	state->end = hint->end;
+
+	if (hint->type == UNWIND_HINT_TYPE_PT_REGS) {
+		for (i = 0; i < CFI_NUM_REGS; ++i) {
+			if (!arch_callee_saved_reg(i))
+				continue;
+			state->regs[i].base = CFI_CFA;
+			state->regs[i].offset = (8 * i) - state->cfa.offset;
+		}
+
+		/* No-one needs to know */
+		state->hint_type = UNWIND_HINT_TYPE_CALL;
+	}
 
 	return 0;
 }
