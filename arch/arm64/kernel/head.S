@@ -69,12 +69,13 @@ _head:
 	 * This add instruction has no meaningful effect except that
 	 * its opcode forms the magic "MZ" signature required by UEFI.
 	 */
-	add	x13, x18, #0x16
+SYM_DATA_LOCAL(_mz_sig, add	x13, x18, #0x16)
 	b	stext
 #else
 	b	stext				// branch to kernel start, magic
-	.long	0				// reserved
+SYM_DATA_LOCAL(_zero_reserved, .long	0)	// reserved
 #endif
+SYM_DATA_START_LOCAL(_arm64_common_header)
 	le64sym	_kernel_offset_le		// Image load offset from start of RAM, little-endian
 	le64sym	_kernel_size_le			// Effective size of kernel image, little-endian
 	le64sym	_kernel_flags_le		// Informative flags, little-endian
@@ -82,13 +83,15 @@ _head:
 	.quad	0				// reserved
 	.quad	0				// reserved
 	.ascii	ARM64_IMAGE_MAGIC		// Magic number
+SYM_DATA_END(_arm64_common_header)
+
 #ifdef CONFIG_EFI
-	.long	pe_header - _head		// Offset to the PE header.
+SYM_DATA_LOCAL(_header_offset, .long	pe_header - _head)	// Offset to the PE header.
 
 pe_header:
 	__EFI_PE_HEADER
 #else
-	.long	0				// reserved
+SYM_DATA_LOCAL(_no_efi,	.long	0)		// reserved
 #endif
 
 	__INIT
