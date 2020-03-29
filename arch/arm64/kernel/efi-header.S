@@ -8,6 +8,7 @@
 #include <linux/sizes.h>
 
 	.macro	__EFI_PE_HEADER
+SYM_DATA_START_LOCAL(arm64_efi_header)
 	.long	PE_MAGIC
 coff_header:
 	.short	IMAGE_FILE_MACHINE_ARM64		// Machine
@@ -148,5 +149,5 @@ efi_debug_entry:
 	 * placed at a 4k boundary in the Image to begin with.
 	 */
 	.align 12
-efi_header_end:
+SYM_DATA_END_LABEL(arm64_efi_header, SYM_L_LOCAL, efi_header_end)
 	.endm
