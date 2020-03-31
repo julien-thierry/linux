@@ -36,4 +36,7 @@ static inline void arch_handle_alternative(unsigned short feature,
 }
 #endif
 
+bool arch_support_alt_relocation(struct special_alt *special_alt,
+				 struct instruction *insn,
+				 struct rela *rela);
 #endif /* _SPECIAL_H */

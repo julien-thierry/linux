@@ -783,6 +783,8 @@ static int handle_group_alt(struct objtool_file *file,
 	last_new_insn = NULL;
 	insn = *new_insn;
 	sec_for_each_insn_from(file, insn) {
+		struct rela *alt_rela;
+
 		if (insn->offset >= special_alt->new_off + special_alt->new_len)
 			break;
 
@@ -798,14 +800,11 @@ static int handle_group_alt(struct objtool_file *file,
 		 * .altinstr_replacement section, unless the arch's
 		 * alternatives code can adjust the relative offsets
 		 * accordingly.
-		 *
-		 * The x86 alternatives code adjusts the offsets only when it
-		 * encounters a branch instruction at the very beginning of the
-		 * replacement group.
 		 */
-		if ((insn->offset != special_alt->new_off ||
-		    (insn->type != INSN_CALL && !is_static_jump(insn))) &&
-		    find_rela_by_dest_range(file->elf, insn->sec, insn->offset, insn->len)) {
+		alt_rela = find_rela_by_dest_range(file->elf, insn->sec,
+						   insn->offset, insn->len);
+		if (alt_rela &&
+		    !arch_support_alt_relocation(special_alt, insn, alt_rela)) {
 
 			WARN_FUNC("unsupported relocation in alternatives section",
 				  insn->sec, insn->offset);
