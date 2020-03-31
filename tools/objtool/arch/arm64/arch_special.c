@@ -9,6 +9,17 @@
 #include "../../warn.h"
 #include "arch_special.h"
 
+bool arch_support_alt_relocation(struct special_alt *special_alt,
+				 struct instruction *insn,
+				 struct rela *rela)
+{
+	u32 opcode = *(u32 *)(insn->sec->data->d_buf + insn->offset);
+
+	return aarch64_insn_is_branch_imm(opcode) ||
+	       aarch64_insn_is_adrp(opcode) ||
+	       !aarch64_insn_uses_literal(opcode);
+}
+
 /*
  * The arm64_switch_table_detection_plugin generate an array of elements
  * described by the following structure.
