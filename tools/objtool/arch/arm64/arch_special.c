@@ -22,6 +22,20 @@ struct switch_table_info {
 	u64 dest_relocations[];
 } __attribute__((__packed__));
 
+static struct section *get_switch_table_info_section(struct objtool_file *file)
+{
+	static bool first = true;
+	static struct section *info_section = NULL;
+
+	if (first) {
+		first = false;
+		info_section = find_section_by_name(file->elf,
+						    ".discard.switch_table_info");
+	}
+
+	return info_section;
+}
+
 /*
  * Aarch64 jump tables are just arrays of offsets (of varying size/signess)
  * representing the potential destination from a base address loaded by an adr
@@ -52,8 +66,7 @@ struct rela *arch_find_switch_table(struct objtool_file *file,
 	void *sti_sec_start;
 	struct rela *text_rela;
 
-	table_info_sec = find_section_by_name(file->elf,
-					      ".discard.switch_table_info");
+	table_info_sec = get_switch_table_info_section(file);
 	if (!table_info_sec)
 		goto try_c_jmptbl;
 
