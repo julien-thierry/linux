@@ -2088,6 +2088,24 @@ static int validate_branch(struct objtool_file *file, struct symbol *func,
 				return 1;
 			}
 
+			if (insn->type == INSN_CALL &&
+			    insn->call_dest->type != STT_FUNC &&
+			    insn->call_dest->bind == STB_LOCAL) {
+				struct instruction *target;
+
+				target = find_insn(file,
+						   insn->call_dest->sec,
+						   insn->call_dest->offset);
+				if (!target) {
+					WARN_FUNC("Can't find call target instruction",
+						  insn->sec, insn->offset);
+					return 1;
+				}
+				ret = validate_branch(file, NULL, target, state);
+				if (ret)
+					return ret;
+			}
+
 			if (dead_end_function(file, insn->call_dest))
 				return 0;
 
