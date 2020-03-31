@@ -712,6 +712,10 @@ static int add_call_destinations(struct objtool_file *file)
 			dest_off = arch_dest_rela_offset(rela->addend);
 			insn->call_dest = find_func_by_offset(rela->sym->sec,
 							      dest_off);
+			if (!insn->call_dest)
+				insn->call_dest = find_symbol_by_offset(rela->sym->sec,
+									dest_off);
+
 			if (!insn->call_dest) {
 				WARN_FUNC("can't find call dest symbol at %s+0x%lx",
 					  insn->sec, insn->offset,
