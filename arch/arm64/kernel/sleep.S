@@ -100,7 +100,7 @@ ENTRY(__cpu_suspend_enter)
 ENDPROC(__cpu_suspend_enter)
 
 	.pushsection ".idmap.text", "awx"
-ENTRY(cpu_resume)
+SYM_CODE_START(cpu_resume)
 	bl	el2_setup		// if in EL2 drop to EL1 cleanly
 	mov	x0, #ARM64_CPU_RUNTIME
 	bl	__cpu_setup
@@ -109,11 +109,11 @@ ENTRY(cpu_resume)
 	bl	__enable_mmu
 	ldr	x8, =_cpu_resume
 	br	x8
-ENDPROC(cpu_resume)
+SYM_CODE_END(cpu_resume)
 	.ltorg
 	.popsection
 
-ENTRY(_cpu_resume)
+SYM_CODE_START(_cpu_resume)
 	mrs	x1, mpidr_el1
 	adr_l	x8, mpidr_hash		// x8 = struct mpidr_hash virt address
 
@@ -149,4 +149,4 @@ ENTRY(_cpu_resume)
 	ldp	x29, lr, [x29]
 	mov	x0, #0
 	ret
-ENDPROC(_cpu_resume)
+SYM_CODE_END(_cpu_resume)
