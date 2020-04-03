@@ -695,14 +695,13 @@ static int add_call_destinations(struct objtool_file *file)
 				continue;
 
 			if (!insn->call_dest) {
-				WARN_FUNC("unsupported intra-function call",
-					  insn->sec, insn->offset);
-				if (retpoline)
-					WARN("If this is a retpoline, please patch it in with alternatives and annotate it with ANNOTATE_NOSPEC_ALTERNATIVE.");
-				return -1;
-			}
-
-			if (insn->func && insn->call_dest->type != STT_FUNC) {
+				insn->jump_dest = find_insn(file, insn->sec, dest_off);
+				if (!insn->jump_dest) {
+					WARN_FUNC("unsupported intra-function call",
+						  insn->sec, insn->offset);
+					return -1;
+				}
+			} else if (insn->func && insn->call_dest->type != STT_FUNC) {
 				WARN_FUNC("unsupported call to non-function",
 					  insn->sec, insn->offset);
 				return -1;
@@ -1314,7 +1313,7 @@ static int decode_sections(struct objtool_file *file)
 static bool is_fentry_call(struct instruction *insn)
 {
 	if (insn->type == INSN_CALL &&
-	    insn->call_dest->type == STT_NOTYPE &&
+	    insn->call_dest && insn->call_dest->type == STT_NOTYPE &&
 	    !strcmp(insn->call_dest->name, "__fentry__"))
 		return true;
 
@@ -2092,22 +2091,35 @@ static int validate_branch(struct objtool_file *file, struct symbol *func,
 				return 1;
 			}
 
-			if (insn->type == INSN_CALL &&
-			    insn->call_dest->type != STT_FUNC &&
-			    insn->call_dest->bind == STB_LOCAL) {
-				struct instruction *target;
+			if (insn->type == INSN_CALL) {
+				if (!insn->call_dest) {
+					/* Intra function call */
+					if (!insn->jump_dest) {
+						WARN_FUNC("Unsupported intra-function call",
+							insn->sec, insn->offset);
+						return 1;
+					}
+					ret = validate_branch(file, func,
+							      insn->jump_dest, state);
+					if (ret)
+						return ret;
 
-				target = find_insn(file,
-						   insn->call_dest->sec,
-						   insn->call_dest->offset);
-				if (!target) {
-					WARN_FUNC("Can't find call target instruction",
-						  insn->sec, insn->offset);
-					return 1;
+				} else if (insn->call_dest->type != STT_FUNC &&
+					insn->call_dest->bind == STB_LOCAL) {
+					struct instruction *target;
+
+					target = find_insn(file,
+							   insn->call_dest->sec,
+							   insn->call_dest->offset);
+					if (!target) {
+						WARN_FUNC("Can't find call target instruction",
+							  insn->sec, insn->offset);
+						return 1;
+					}
+					ret = validate_branch(file, NULL, target, state);
+					if (ret)
+						return ret;
 				}
-				ret = validate_branch(file, NULL, target, state);
-				if (ret)
-					return ret;
 			}
 
 			if (dead_end_function(file, insn->call_dest))
