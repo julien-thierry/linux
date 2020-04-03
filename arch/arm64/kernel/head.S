@@ -70,8 +70,10 @@ _head:
 	 * its opcode forms the magic "MZ" signature required by UEFI.
 	 */
 SYM_DATA_LOCAL(_mz_sig, add	x13, x18, #0x16)
+UNWIND_HINT_EMPTY
 	b	stext
 #else
+UNWIND_HINT_EMPTY
 	b	stext				// branch to kernel start, magic
 SYM_DATA_LOCAL(_zero_reserved, .long	0)	// reserved
 #endif
@@ -482,6 +484,7 @@ EXPORT_SYMBOL(kimage_vaddr)
  * booted in EL1 or EL2 respectively.
  */
 SYM_CODE_START(el2_setup)
+	UNWIND_HINT_EMPTY
 	msr	SPsel, #1			// We want to use SP_EL{1,2}
 	mrs	x0, CurrentEL
 	cmp	x0, #CurrentEL_EL2
@@ -692,6 +695,7 @@ SYM_DATA_END(__early_cpu_boot_status)
 	 * cores are held until we're ready for them to initialise.
 	 */
 SYM_CODE_START(secondary_holding_pen)
+	UNWIND_HINT_EMPTY
 	bl	el2_setup			// Drop to EL1, w0=cpu_boot_mode
 	bl	set_cpu_boot_mode_flag
 	mrs	x0, mpidr_el1
@@ -710,6 +714,7 @@ SYM_CODE_END(secondary_holding_pen)
 	 * be used where CPUs are brought online dynamically by the kernel.
 	 */
 SYM_CODE_START(secondary_entry)
+	UNWIND_HINT_EMPTY
 	bl	el2_setup			// Drop to EL1
 	bl	set_cpu_boot_mode_flag
 	b	secondary_startup
@@ -729,6 +734,7 @@ SYM_CODE_START_LOCAL(secondary_startup)
 SYM_CODE_END(secondary_startup)
 
 SYM_CODE_START_LOCAL(__secondary_switched)
+	UNWIND_HINT_EMPTY // Indirect call by secondary_startup
 	adr_l	x5, vectors
 	msr	vbar_el1, x5
 	isb
@@ -782,6 +788,7 @@ SYM_CODE_END(__secondary_too_slow)
  * If it isn't, park the CPU
  */
 SYM_CODE_START(__enable_mmu)
+	UNWIND_HINT_EMPTY
 	mrs	x2, ID_AA64MMFR0_EL1
 	ubfx	x2, x2, #ID_AA64MMFR0_TGRAN_SHIFT, 4
 	cmp	x2, #ID_AA64MMFR0_TGRAN_SUPPORTED
