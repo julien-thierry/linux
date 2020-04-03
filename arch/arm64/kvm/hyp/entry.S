@@ -52,6 +52,7 @@
  *		     struct kvm_cpu_context *host_ctxt);
  */
 SYM_CODE_START(__guest_enter)
+	UNWIND_HINT_FUNC
 	// x0: vcpu
 	// x1: host context
 	// x2-x17: clobbered by macros
@@ -106,6 +107,7 @@ SYM_INNER_LABEL(__guest_exit, SYM_L_GLOBAL)
 	// x1: vcpu
 	// x2-x29,lr: vcpu regs
 	// vcpu x0-x1 on the stack
+	UNWIND_HINT_FUNC sp_offset=16
 
 	add	x1, x1, #VCPU_CONTEXT
 
