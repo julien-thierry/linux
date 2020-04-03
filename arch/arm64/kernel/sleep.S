@@ -5,6 +5,7 @@
 #include <asm/asm-offsets.h>
 #include <asm/assembler.h>
 #include <asm/smp.h>
+#include <asm/unwind_hints.h>
 
 	.text
 /*
@@ -101,6 +102,7 @@ ENDPROC(__cpu_suspend_enter)
 
 	.pushsection ".idmap.text", "awx"
 SYM_CODE_START(cpu_resume)
+	UNWIND_HINT_EMPTY
 	bl	el2_setup		// if in EL2 drop to EL1 cleanly
 	mov	x0, #ARM64_CPU_RUNTIME
 	bl	__cpu_setup
@@ -114,6 +116,7 @@ SYM_CODE_END(cpu_resume)
 	.popsection
 
 SYM_CODE_START(_cpu_resume)
+	UNWIND_HINT_EMPTY
 	mrs	x1, mpidr_el1
 	adr_l	x8, mpidr_hash		// x8 = struct mpidr_hash virt address
 
