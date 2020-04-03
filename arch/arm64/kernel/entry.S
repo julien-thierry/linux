@@ -743,7 +743,7 @@ work_pending:
 /*
  * "slow" syscall return path.
  */
-ret_to_user:
+SYM_CODE_START_LOCAL(ret_to_user)
 	disable_daif
 	gic_prio_kentry_setup tmp=x3
 	ldr	x1, [tsk, #TSK_TI_FLAGS]
@@ -755,7 +755,7 @@ finish_ret_to_user:
 	bl	stackleak_erase
 #endif
 	kernel_exit 0
-ENDPROC(ret_to_user)
+SYM_CODE_END(ret_to_user)
 
 	.popsection				// .entry.text
 
