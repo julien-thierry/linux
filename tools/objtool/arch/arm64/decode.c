@@ -4,10 +4,13 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#include <linux/frame.h>
+
 /* Hack needed to avoid depending on brk-imm.h */
 #define FAULT_BRK_IMM	0x100
 
 #include <asm/aarch64-insn.h>
+#include <asm/unwind_hints.h>
 
 #include "cfi_regs.h"
 
@@ -130,6 +133,33 @@ unsigned long arch_dest_rela_offset(int addend)
 unsigned long arch_jump_destination(struct instruction *insn)
 {
 	return insn->offset + insn->immediate;
+}
+
+int arch_decode_insn_hint(struct instruction *insn, struct unwind_hint *hint)
+{
+	if (hint->type == UNWIND_HINT_TYPE_SAVE) {
+		insn->save = true;
+		return 0;
+
+	} else if (hint->type == UNWIND_HINT_TYPE_RESTORE) {
+		insn->restore = true;
+		insn->hint = true;
+		return 0;
+	}
+
+	if (hint->sp_reg == UNWIND_HINT_REG_UNDEFINED)
+		insn->state.cfa.base = CFI_UNDEFINED;
+	else
+		insn->state.cfa.base = hint->sp_reg;
+
+	insn->state.cfa.offset = hint->sp_offset;
+	insn->state.pre_populated_stack = hint->type == UNWIND_HINT_TYPE_PT_REGS;
+	insn->state.hint_type = hint->type;
+	insn->state.end = hint->end;
+
+	insn->hint = true;
+
+	return 0;
 }
 
 static int is_arm64(struct elf *elf)

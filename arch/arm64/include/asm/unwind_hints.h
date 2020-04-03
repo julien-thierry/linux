@@ -1,0 +1,40 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
+
+#ifndef __ASM_UNWIND_HINTS_H
+#define __ASM_UNWIND_HINTS_H
+
+#include <linux/frame.h>
+
+#define UNWIND_HINT_TYPE_CALL		0
+#define UNWIND_HINT_TYPE_PT_REGS	1
+#define UNWIND_HINT_TYPE_SAVE		2
+#define UNWIND_HINT_TYPE_RESTORE	3
+
+#define UNWIND_HINT_REG_UNDEFINED	0xff
+#define UNWIND_HINT_REG_SP		31
+
+#ifdef __ASSEMBLY__
+
+.macro UNWIND_HINT_EMPTY
+	UNWIND_HINT sp_reg=UNWIND_HINT_REG_UNDEFINED type=UNWIND_HINT_TYPE_CALL
+.endm
+
+.macro UNWIND_HINT_FUNC sp_offset=0
+	UNWIND_HINT sp_reg=UNWIND_HINT_REG_SP sp_offset=\sp_offset type=UNWIND_HINT_TYPE_CALL
+.endm
+
+.macro UNWIND_HINT_PT_STACK base=UNWIND_HINT_REG_SP offset=S_FRAME_SIZE
+	UNWIND_HINT sp_reg=\base sp_offset=\offset type=UNWIND_HINT_TYPE_PT_REGS
+.endm
+
+.macro UNWIND_HINT_SAVE
+	UNWIND_HINT sp_reg=UNWIND_HINT_REG_SP type=UNWIND_HINT_TYPE_SAVE
+.endm
+
+.macro UNWIND_HINT_RESTORE
+	UNWIND_HINT sp_reg=UNWIND_HINT_REG_SP type=UNWIND_HINT_TYPE_RESTORE
+.endm
+
+#endif /* __ASSEMBLY__ */
+
+#endif /* __ASM_UNWIND_HINTS_H */
