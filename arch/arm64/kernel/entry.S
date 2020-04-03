@@ -60,6 +60,7 @@
 
 	.macro kernel_ventry, el, label, regsize = 64
 	.align 7
+	UNWIND_HINT_EMPTY
 #ifdef CONFIG_UNMAP_KERNEL_AT_EL0
 	.if	\el == 0
 alternative_if ARM64_UNMAP_KERNEL_AT_EL0
@@ -85,6 +86,7 @@ alternative_else_nop_endif
 	tbnz	x0, #THREAD_SHIFT, 0f
 	sub	x0, sp, x0			// x0'' = sp' - x0' = (sp + x0) - sp = x0
 	sub	sp, sp, x0			// sp'' = sp' - x0 = (sp + x0) - x0 = sp
+	UNWIND_HINT_FUNC sp_offset=S_FRAME_SIZE
 	b	el\()\el\()_\label
 
 0:
@@ -117,6 +119,7 @@ alternative_else_nop_endif
 	sub	sp, sp, x0
 	mrs	x0, tpidrro_el0
 #endif
+	UNWIND_HINT_FUNC sp_offset=S_FRAME_SIZE
 	b	el\()\el\()_\label
 	.endm
 
@@ -406,6 +409,14 @@ alternative_insn eret, nop, ARM64_UNMAP_KERNEL_AT_EL0
 	/* switch to the irq stack */
 	mov	sp, x26
 9998:
+	/*
+	 * We are lying about the fact that the irq stack is always empty
+	 * objtool currently does not support instructions that can have
+	 * different stack states.
+	 * A new type of unwind hint probably needs to be introduced, but this
+	 * might be good enough for now...
+	 */
+	UNWIND_HINT_FUNC
 	.endm
 
 	/*
@@ -414,6 +425,8 @@ alternative_insn eret, nop, ARM64_UNMAP_KERNEL_AT_EL0
 	 */
 	.macro	irq_stack_exit
 	mov	sp, x19
+	/* Switch back to the stack that had the PT regs */
+	UNWIND_HINT_PT_STACK
 	.endm
 
 /* GPRs used by entry code */
@@ -798,6 +811,7 @@ alternative_else_nop_endif
 
 	.macro tramp_ventry, regsize = 64
 	.align	7
+	UNWIND_HINT_EMPTY
 1:
 	.if	\regsize == 64
 	msr	tpidrro_el0, x30	// Restored in kernel_ventry
@@ -854,10 +868,12 @@ SYM_CODE_START_NOALIGN(tramp_vectors)
 SYM_CODE_END(tramp_vectors)
 
 SYM_CODE_START_LOCAL(tramp_exit_native)
+	UNWIND_HINT_EMPTY
 	tramp_exit
 SYM_CODE_END(tramp_exit_native)
 
 SYM_CODE_START_LOCAL(tramp_exit_compat)
+	UNWIND_HINT_EMPTY
 	tramp_exit	32
 SYM_CODE_END(tramp_exit_compat)
 
@@ -911,6 +927,7 @@ NOKPROBE(cpu_switch_to)
  * This is how we return from a fork.
  */
 SYM_CODE_START(ret_from_fork)
+	UNWIND_HINT_PT_STACK
 	bl	schedule_tail
 	cbz	x19, 1f				// not a kernel thread
 	mov	x0, x20
