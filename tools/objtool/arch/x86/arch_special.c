@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include <stdlib.h>
 
+#include "../../check.h"
 #include "../../special.h"
 #include "../../builtin.h"
 #include "../../warn.h"

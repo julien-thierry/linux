@@ -79,6 +79,12 @@ void mark_data(struct instruction *insn);
 			insn->sec == sec;				\
 	     insn = list_next_entry(insn, list))
 
+static inline bool is_static_jump(struct instruction *insn)
+{
+	return insn->type == INSN_JUMP_CONDITIONAL ||
+	       insn->type == INSN_JUMP_UNCONDITIONAL;
+}
+
 #define C_JUMP_TABLE_SECTION ".rodata..c_jump_table"
 
 #endif /* _CHECK_H */
