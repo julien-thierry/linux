@@ -424,22 +424,6 @@ int arch_decode_instruction(struct elf *elf, struct section *sec,
 			 aarch64_insn_is_subs_imm(insn)) {
 			arm_decode_add_sub_imm(insn, true, type, immediate,
 					       ops_list);
-		} else if (aarch64_insn_is_and_imm(insn) &&
-			   aarch64_insn_decode_register(AARCH64_INSN_REGTYPE_RN, insn) == AARCH64_INSN_REG_SP &&
-			   aarch64_insn_decode_register(AARCH64_INSN_REGTYPE_RD, insn) == AARCH64_INSN_REG_SP) {
-			struct stack_op *op;
-
-			*immediate = aarch64_insn_decode_immediate(AARCH64_INSN_IMM_R, insn) |
-				     aarch64_insn_decode_immediate(AARCH64_INSN_IMM_S, insn) << 6;
-			if (insn & BIT(31) && insn & BIT(22))
-				*immediate |= BIT(16);
-			op = calloc(1, sizeof(*op));
-			op->dest.reg = CFI_SP;
-			op->dest.type = OP_DEST_REG;
-			op->src.reg = CFI_SP;
-			op->src.type = OP_SRC_AND;
-			list_add_tail(&op->list, ops_list);
-			*type = INSN_STACK;
 		} else if (aarch64_insn_is_adr(insn) || aarch64_insn_is_adrp(insn)) {
 			*immediate = sign_extend(aarch64_insn_decode_immediate(AARCH64_INSN_IMM_ADR, insn),
 				                 21);
