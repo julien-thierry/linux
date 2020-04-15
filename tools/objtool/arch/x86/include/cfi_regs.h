@@ -22,6 +22,7 @@
 #define CFI_RA			16
 #define CFI_NUM_REGS		17
 
+#define CFA_SIZE	16
 #define CFA_BP_OFFSET	-16
 #define CFA_RA_OFFSET	-8
 
