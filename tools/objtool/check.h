@@ -25,6 +25,7 @@ struct insn_state {
 	unsigned int uaccess_stack;
 	int drap_reg, drap_offset;
 	struct cfi_reg vals[CFI_NUM_REGS];
+	int cfa_start;
 };
 
 struct instruction {

@@ -1388,6 +1388,34 @@ static void restore_reg(struct insn_state *state, unsigned char reg)
 	state->regs[reg].offset = initial_func_cfi.regs[reg].offset;
 }
 
+static bool detect_stack_frame(struct insn_state *state, int base, int offset)
+{
+	if (state->regs[CFI_BP].base == base &&
+	    state->regs[CFI_BP].offset - offset == CFA_SIZE + CFA_BP_OFFSET &&
+	    state->regs[CFI_RA].base == base &&
+	    state->regs[CFI_RA].offset - offset == CFA_SIZE + CFA_RA_OFFSET)
+		return true;
+
+	return false;
+}
+
+static void mark_stack_frame(struct insn_state *state, int base, int offset)
+{
+	int i;
+
+	if (base == CFI_UNDEFINED) {
+		WARN("Trying to create call frame with undefined base");
+		return;
+	}
+
+	for (i = 0; i < CFI_NUM_REGS; i++) {
+		if (state->regs[i].base == base) {
+			state->regs[i].base = CFI_CFA;
+			state->regs[i].offset -= offset + CFA_SIZE;
+		}
+	}
+}
+
 /*
  * A note about DRAP stack alignment:
  *
@@ -1446,15 +1474,6 @@ static int update_insn_state(struct instruction *insn, struct insn_state *state,
 {
 	struct cfi_reg *cfa = &state->cfa;
 	struct cfi_reg *regs = state->regs;
-
-	/* stack operations don't make sense with an undefined CFA */
-	if (cfa->base == CFI_UNDEFINED) {
-		if (insn->func) {
-			WARN_FUNC("undefined stack state", insn->sec, insn->offset);
-			return -1;
-		}
-		return 0;
-	}
 
 	if (state->pre_populated_stack)
 		return update_insn_state_regs(insn, state, op);
@@ -1532,6 +1551,17 @@ static int update_insn_state(struct instruction *insn, struct insn_state *state,
 					cfa->base = CFI_UNDEFINED;
 					cfa->offset = 0;
 				}
+			} else if (!state->drap && cfa->base == CFI_UNDEFINED &&
+				   op->dest.reg == CFI_BP &&
+				   op->src.reg == CFI_SP &&
+				   detect_stack_frame(state, CFI_SP, -state->stack_size)) {
+
+				/* mov %rsp, %rbp */
+				mark_stack_frame(state, CFI_SP, -state->stack_size);
+				cfa->base = op->dest.reg;
+				cfa->offset = CFA_SIZE;
+				state->cfa_start = state->stack_size - CFA_SIZE;
+				state->bp_scratch = false;
 			}
 
 			break;
@@ -1541,8 +1571,15 @@ static int update_insn_state(struct instruction *insn, struct insn_state *state,
 
 				/* add imm, %rsp */
 				state->stack_size -= op->src.offset;
-				if (cfa->base == CFI_SP)
+				if (cfa->base == CFI_SP) {
+					if (state->stack_size <= state->cfa_start) {
+						/* Reset cfa */
+						cfa->base = initial_func_cfi.cfa.base;
+						cfa->offset = 0;
+						break;
+					}
 					cfa->offset -= op->src.offset;
+				}
 				break;
 			}
 
@@ -1553,16 +1590,27 @@ static int update_insn_state(struct instruction *insn, struct insn_state *state,
 				break;
 			}
 
-			if (!state->drap && op->src.reg == CFI_SP &&
-			    op->dest.reg == CFI_BP && cfa->base == CFI_SP &&
-			    regs[CFI_BP].base == CFI_CFA &&
-			    regs[CFI_BP].offset == -cfa->offset + op->src.offset) {
+			if (!state->drap && op->src.reg == CFI_SP && op->dest.reg == CFI_BP) {
 
 				/* lea disp(%rsp), %rbp */
-				cfa->base = CFI_BP;
-				cfa->offset -= op->src.offset;
-				state->bp_scratch = false;
-				break;
+				if (cfa->base == CFI_SP &&
+				    regs[CFI_BP].base == CFI_CFA &&
+				    regs[CFI_BP].offset == -cfa->offset + op->src.offset) {
+
+					cfa->base = CFI_BP;
+					cfa->offset -= op->src.offset;
+					state->bp_scratch = false;
+					break;
+				} else if (cfa->base == CFI_UNDEFINED &&
+					   detect_stack_frame(state, CFI_SP, -state->stack_size + op->src.offset)) {
+
+					mark_stack_frame(state, CFI_SP, -state->stack_size + op->src.offset);
+					cfa->base = CFI_BP;
+					cfa->offset = CFA_SIZE;
+					state->cfa_start = state->stack_size - op->src.offset - CFA_SIZE;
+					state->bp_scratch = false;
+					break;
+				}
 			}
 
 			if (op->src.reg == CFI_SP && cfa->base == CFI_SP) {
@@ -1607,6 +1655,8 @@ static int update_insn_state(struct instruction *insn, struct insn_state *state,
 			break;
 
 		case OP_SRC_AND:
+			if (!insn->func && cfa->base == CFI_UNDEFINED)
+				return 0;
 			if (op->dest.reg != CFI_SP ||
 			    (state->drap_reg != CFI_UNDEFINED && cfa->base != CFI_SP) ||
 			    (state->drap_reg == CFI_UNDEFINED && cfa->base != CFI_BP)) {
@@ -1635,6 +1685,7 @@ static int update_insn_state(struct instruction *insn, struct insn_state *state,
 
 				/* pop %rbp */
 				cfa->base = CFI_SP;
+				cfa->offset = state->stack_size - state->cfa_start;
 			}
 
 			if (state->drap && cfa->base == CFI_BP_INDIRECT &&
@@ -1646,7 +1697,7 @@ static int update_insn_state(struct instruction *insn, struct insn_state *state,
 				cfa->offset = 0;
 				state->drap_offset = -1;
 
-			} else if (regs[op->dest.reg].offset == -state->stack_size) {
+			} else if (regs[op->dest.reg].offset == -state->stack_size + state->cfa_start) {
 
 				/* pop %reg */
 				restore_reg(state, op->dest.reg);
@@ -1666,6 +1717,12 @@ static int update_insn_state(struct instruction *insn, struct insn_state *state,
 				cfa->base = state->drap_reg;
 				cfa->offset = 0;
 				state->drap_offset = -1;
+
+			} else if (!state->drap && op->dest.reg == cfa->base) {
+
+				/* mov disp(%reg), %rbp */
+				cfa->base = CFI_SP;
+				cfa->offset = state->stack_size - state->cfa_start;
 			}
 
 			if (state->drap && op->src.reg == CFI_BP &&
@@ -1674,7 +1731,7 @@ static int update_insn_state(struct instruction *insn, struct insn_state *state,
 				/* drap: mov disp(%rbp), %reg */
 				restore_reg(state, op->dest.reg);
 
-			} else if (op->src.reg == cfa->base &&
+			} else if (op->src.reg == cfa->base && regs[op->dest.reg].base == CFI_CFA &&
 			    op->src.offset == regs[op->dest.reg].offset + cfa->offset) {
 
 				/* mov disp(%rbp), %reg */
@@ -1725,7 +1782,12 @@ static int update_insn_state(struct instruction *insn, struct insn_state *state,
 		} else {
 
 			/* push %reg */
-			save_reg(state, op->src.reg, CFI_CFA, -state->stack_size);
+			if (cfa->base != CFI_UNDEFINED)
+				save_reg(state, op->src.reg, CFI_CFA,
+					 -state->stack_size + state->cfa_start);
+			else
+				save_reg(state, op->src.reg, CFI_SP,
+					 -state->stack_size);
 		}
 
 		/* detect when asm code uses rbp as a scratch register */
@@ -1753,12 +1815,18 @@ static int update_insn_state(struct instruction *insn, struct insn_state *state,
 				save_reg(state, op->src.reg, CFI_BP, op->dest.offset);
 			}
 
-		} else if (op->dest.reg == cfa->base) {
+		} else if (op->dest.reg == cfa->base && op->dest.offset <= state->cfa.offset) {
 
 			/* mov reg, disp(%rbp) */
 			/* mov reg, disp(%rsp) */
 			save_reg(state, op->src.reg, CFI_CFA,
 				 op->dest.offset - state->cfa.offset);
+
+		} else if (cfa->base == CFI_UNDEFINED && op->dest.reg == CFI_SP) {
+
+			/* mov reg, disp(%rsp) */
+			save_reg(state, op->src.reg, CFI_SP,
+				 op->dest.offset - state->stack_size);
 		}
 
 		break;

@@ -104,7 +104,7 @@ bool arch_callee_saved_reg(unsigned char reg)
 	case AARCH64_INSN_REG_27:
 	case AARCH64_INSN_REG_28:
 	case AARCH64_INSN_REG_FP:
-	case AARCH64_INSN_REG_30:
+	case AARCH64_INSN_REG_LR:
 		return true;
 	default:
 		return false;
@@ -121,7 +121,7 @@ void arch_initial_func_cfi_state(struct cfi_state *state)
 	}
 
 	/* initial CFA (call frame address) */
-	state->cfa.base = CFI_SP;
+	state->cfa.base = CFI_UNDEFINED;
 	state->cfa.offset = 0;
 }
 
