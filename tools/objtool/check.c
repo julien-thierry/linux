@@ -14,6 +14,7 @@
 #include "warn.h"
 #include "arch_elf.h"
 
+#include <linux/frame.h>
 #include <linux/hashtable.h>
 #include <linux/kernel.h>
 

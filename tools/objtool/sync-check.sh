@@ -3,8 +3,10 @@
 
 TARGET_ARCH=$1
 
+FILES="include/linux/frame.h"
+
 if [ "$TARGET_ARCH" == "x86" ]; then
-FILES="
+FILES="$FILES
 arch/x86/include/asm/inat_types.h
 arch/x86/include/asm/orc_types.h
 arch/x86/include/asm/emulate_prefix.h

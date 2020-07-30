@@ -78,19 +78,6 @@ struct orc_entry {
 	unsigned	end:1;
 } __packed;
 
-/*
- * This struct is used by asm and inline asm code to manually annotate the
- * location of registers on the stack for the ORC unwinder.
- *
- * Type can be either ORC_TYPE_* or UNWIND_HINT_TYPE_*.
- */
-struct unwind_hint {
-	u32		ip;
-	s16		sp_offset;
-	u8		sp_reg;
-	u8		type;
-	u8		end;
-};
 #endif /* __ASSEMBLY__ */
 
 #endif /* _ORC_TYPES_H */
