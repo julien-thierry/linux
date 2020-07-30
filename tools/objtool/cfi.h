@@ -29,10 +29,11 @@ struct cfi_state {
 	struct cfi_reg cfa;
 	int stack_size;
 	int drap_reg, drap_offset;
-	unsigned char type;
+	unsigned char hint_type;
 	bool bp_scratch;
 	bool drap;
 	bool end;
+	bool sp_only;
 };
 
 #endif /* _OBJTOOL_CFI_H */

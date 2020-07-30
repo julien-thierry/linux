@@ -7,6 +7,7 @@
 #define _ARCH_H
 
 #include <stdbool.h>
+#include <linux/frame.h>
 #include <linux/list.h>
 #include "objtool.h"
 #include "cfi.h"
@@ -87,5 +88,7 @@ unsigned long arch_jump_destination(struct instruction *insn);
 unsigned long arch_dest_reloc_offset(int addend);
 
 const char *arch_nop_insn(int len);
+
+int arch_decode_insn_hint(struct instruction *insn, struct unwind_hint *hint);
 
 #endif /* _ARCH_H */

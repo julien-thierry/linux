@@ -9,6 +9,8 @@
 #include "check.h"
 #include "warn.h"
 
+#include <asm/orc_types.h>
+
 int create_orc(struct objtool_file *file)
 {
 	struct instruction *insn;
@@ -77,7 +79,7 @@ int create_orc(struct objtool_file *file)
 
 		orc->sp_offset = cfa->offset;
 		orc->bp_offset = bp->offset;
-		orc->type = insn->cfi.type;
+		orc->type = insn->cfi.hint_type;
 	}
 
 	return 0;

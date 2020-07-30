@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <linux/frame.h>
+
 #define unlikely(cond) (cond)
 #include <asm/insn.h>
 #include "../../../arch/x86/lib/inat.c"
@@ -15,6 +17,7 @@
 #include "../../elf.h"
 #include "../../arch.h"
 #include "../../warn.h"
+#include <asm/orc_types.h>
 
 static unsigned char op_to_cfi_reg[][2] = {
 	{CFI_AX, CFI_R8},
@@ -582,4 +585,55 @@ const char *arch_nop_insn(int len)
 	}
 
 	return nops[len-1];
+}
+
+int arch_decode_insn_hint(struct instruction *insn, struct unwind_hint *hint)
+{
+	struct cfi_reg *cfa = &insn->cfi.cfa;
+
+	if (hint->type == UNWIND_HINT_TYPE_RET_OFFSET) {
+		insn->ret_offset = hint->sp_offset;
+		return 0;
+	}
+
+	insn->hint = true;
+
+	switch (hint->sp_reg) {
+	case ORC_REG_UNDEFINED:
+		cfa->base = CFI_UNDEFINED;
+		break;
+	case ORC_REG_SP:
+		cfa->base = CFI_SP;
+		break;
+	case ORC_REG_BP:
+		cfa->base = CFI_BP;
+		break;
+	case ORC_REG_SP_INDIRECT:
+		cfa->base = CFI_SP_INDIRECT;
+		break;
+	case ORC_REG_R10:
+		cfa->base = CFI_R10;
+		break;
+	case ORC_REG_R13:
+		cfa->base = CFI_R13;
+		break;
+	case ORC_REG_DI:
+		cfa->base = CFI_DI;
+		break;
+	case ORC_REG_DX:
+		cfa->base = CFI_DX;
+		break;
+	default:
+		WARN_FUNC("unsupported unwind_hint sp base reg %d",
+			  insn->sec, insn->offset, hint->sp_reg);
+		return -1;
+	}
+
+	cfa->offset = hint->sp_offset;
+	insn->cfi.hint_type = hint->type;
+	insn->cfi.end = hint->end;
+
+	insn->cfi.sp_only = hint->type == ORC_TYPE_REGS || hint->type == ORC_TYPE_REGS_IRET;
+
+	return 0;
 }
